@@ -1,38 +1,53 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using UrlShortener.Models;
+using UrlShortener.Data.Contracts;
+using UrlShortener.Services;
 
 namespace UrlShortener.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly ILogger<HomeController> _logger;
+        private readonly IShortenedUrlsRepository _shortenedUrlsRepository;
+        private readonly IShortenedUrlService _shortenedUrlService;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(IShortenedUrlService shortenedUrlService, IShortenedUrlsRepository shortenedUrlsRepository)
         {
+            _shortenedUrlService = shortenedUrlService;
+            _shortenedUrlsRepository = shortenedUrlsRepository;
+        }
+
+        [HttpGet("{id?}")]
+        public async Task<IActionResult> Index(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                return View("Index", string.Empty);
+            }
             
-            _logger = logger;
+            var url = await _shortenedUrlService.GetExistingUrlByShortenedUrl(id);
+
+            if (string.IsNullOrEmpty(url))
+            {
+                return RedirectToAction("Index", string.Empty);
+            }
+
+            return RedirectPermanent(url);
         }
 
-        public IActionResult Index()
+        [HttpPost]
+        public async Task<IActionResult> Index(Uri url)
         {
-            return View();
+            var shortenedUrl = await _shortenedUrlService.GetShortenedUrl(url.ToString());
+            return View("Index", shortenedUrl);
         }
 
-        public IActionResult Privacy()
+        [HttpGet]
+        public async Task<IActionResult> GetList()
         {
-            return View();
-        }
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel {RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier});
+            var list = await _shortenedUrlsRepository.GetAll();
+            return View("List", list.ToList());
         }
     }
 }

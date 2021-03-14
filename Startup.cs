@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+using UrlShortener.Data;
+using UrlShortener.Data.Contracts;
 using UrlShortener.Services;
-using UrlShortener.Services.Contracts;
 
 namespace UrlShortener
 {
@@ -21,8 +23,16 @@ namespace UrlShortener
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllersWithViews();
+            
+            services.Configure<ShortenedUrlsDatabaseSettings>(
+                Configuration.GetSection(nameof(ShortenedUrlsDatabaseSettings)));
 
-            services.AddScoped<IHashGeneratorService, HashGeneratorService>();
+            services.AddSingleton<IShortenedUrlsDatabaseSettings>(sp =>
+                sp.GetRequiredService<IOptions<ShortenedUrlsDatabaseSettings>>().Value);
+
+            services.AddScoped<IShortenedUrlsRepository, ShortenedUrlsRepository>();
+
+            services.AddScoped<IShortenedUrlService, ShortenedUrlService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -34,8 +44,6 @@ namespace UrlShortener
             }
             else
             {
-                app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
 
@@ -43,8 +51,6 @@ namespace UrlShortener
             app.UseStaticFiles();
 
             app.UseRouting();
-
-            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {

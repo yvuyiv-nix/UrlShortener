@@ -1,0 +1,15 @@
+﻿@model ICollection<UrlShortener.Data.Entities.ShortenedUrl>
+
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">All shortened urls</h1>
+    <ul class="list-group">
+        @foreach (var url in Model)
+        {
+            <li class="list-group-item">@url.Id: @url.Url</li>
+        }
+    </ul>
+</div>
